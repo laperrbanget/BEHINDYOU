@@ -120,7 +120,7 @@ class Game:
                 os.path.join(SOUNDS_DIR, music_file)
             )
 
-            pygame.mixer.music.set_volume(1.0)
+            pygame.mixer.music.set_volume(0.8)
             pygame.mixer.music.play(-1)
 
         except Exception as e:
