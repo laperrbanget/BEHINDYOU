@@ -1,1 +1,1 @@
-load_so
+reset_game()

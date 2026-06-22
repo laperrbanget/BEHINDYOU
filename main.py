@@ -320,6 +320,7 @@ class Game:
         self.jumpscare_timer = 0
         
         self.show_victory_screen = False
+        self.victory_timer = 0
     
     def draw_background(self):
         
@@ -425,7 +426,7 @@ class Game:
         if self.ghosts:
             min_dist = min(abs(self.player.x - g.x) + abs(self.player.y - g.y) for g in self.ghosts)
             if min_dist <= 3 and not self.game_over and not self.win:
-                warning = self.font_small.render("⚠️ GHOST NEAR! ⚠️", True, RED)
+                warning = self.font_small.render("GHOST NEAR!", True, RED)
                 self.screen.blit(warning, (SCREEN_WIDTH//2 - 80, y_offset + 45))
                 
                 beat = (pygame.time.get_ticks() // 200) % 2
@@ -444,7 +445,7 @@ class Game:
             overlay.set_alpha(180)
             overlay.fill(BLACK)
             self.screen.blit(overlay, (0,0))
-            go_text = self.font_big.render("💀 GAME OVER 💀", True, RED)
+            go_text = self.font_big.render("GAME OVER", True, RED)
             self.screen.blit(go_text, (SCREEN_WIDTH//2 - 120, SCREEN_HEIGHT//2))
             restart_text = self.font_small.render("Press R to Restart Level", True, WHITE)
             self.screen.blit(restart_text, (SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2 + 50))
@@ -456,31 +457,29 @@ class Game:
             overlay.fill(BLACK)
             self.screen.blit(overlay, (0,0))
             
-            # 🔥 CEK APAKAH LEVEL 5 DAN VICTORY SCREEN AKTIF
             if self.current_level == 5 and self.show_victory_screen:
-                # Confetti!
+                # Level 5 - Victory screen khusus
                 self.draw_confetti()
+                
+                win_text = self.font_big.render("YOU ESCAPED THE GHOST!", True, GREEN)
+                self.screen.blit(win_text, (SCREEN_WIDTH//2 - win_text.get_width()//2, SCREEN_HEIGHT//2 - 60))
+                
+                sub_text = self.font_small.render("You have completed all levels! Behind You...", True, WHITE)
+                self.screen.blit(sub_text, (SCREEN_WIDTH//2 - sub_text.get_width()//2, SCREEN_HEIGHT//2))
+                
+                sub_text2 = self.font_small.render("CONGRATULATIONS!", True, (255, 215, 0))
+                self.screen.blit(sub_text2, (SCREEN_WIDTH//2 - sub_text2.get_width()//2, SCREEN_HEIGHT//2 + 40))
+                
+                continue_text = self.font_small.render("Press ENTER to continue to Home", True, WHITE)
+                self.screen.blit(continue_text, (SCREEN_WIDTH//2 - continue_text.get_width()//2, SCREEN_HEIGHT//2 + 120))
             
-            # Pesan khusus level 5 (tanpa tombol, biar nikmatin dulu)
-            win_text = self.font_big.render("🎉 YOU ESCAPED THE GHOST! 🎉", True, GREEN)
-            self.screen.blit(win_text, (SCREEN_WIDTH//2 - win_text.get_width()//2, SCREEN_HEIGHT//2 - 60))
-            
-            sub_text = self.font_small.render("You have completed all levels! Behind You...", True, WHITE)
-            self.screen.blit(sub_text, (SCREEN_WIDTH//2 - sub_text.get_width()//2, SCREEN_HEIGHT//2))
-            
-            sub_text2 = self.font_small.render("🎊 CONGRATULATIONS! 🎊", True, (255, 215, 0))
-            self.screen.blit(sub_text2, (SCREEN_WIDTH//2 - sub_text2.get_width()//2, SCREEN_HEIGHT//2 + 40))
-            
-            # 🔥 TOMBOL ENTER UNTUK KE HOME
-            continue_text = self.font_small.render("Press ENTER to continue to Home", True, WHITE)
-            self.screen.blit(continue_text, (SCREEN_WIDTH//2 - continue_text.get_width()//2, SCREEN_HEIGHT//2 + 120))
-        else:
-            # Pesan biasa (level 1-4)
-            win_text = self.font_big.render("🎉 YOU ESCAPED! 🎉", True, GREEN)
-            self.screen.blit(win_text, (SCREEN_WIDTH//2 - win_text.get_width()//2, SCREEN_HEIGHT//2 - 30))
-            
-            restart_text = self.font_small.render("Press R for Next Level | ESC for Home", True, WHITE)
-            self.screen.blit(restart_text, (SCREEN_WIDTH//2 - restart_text.get_width()//2, SCREEN_HEIGHT//2 + 100))
+            else:
+                # Level 1-4 - Win screen biasa
+                win_text = self.font_big.render("YOU ESCAPED!", True, GREEN)
+                self.screen.blit(win_text, (SCREEN_WIDTH//2 - win_text.get_width()//2, SCREEN_HEIGHT//2 - 30))
+                
+                restart_text = self.font_small.render("Press R for Next Level | ESC for Home", True, WHITE)
+                self.screen.blit(restart_text, (SCREEN_WIDTH//2 - restart_text.get_width()//2, SCREEN_HEIGHT//2 + 100))
     
     def draw_flash_effect(self):
         if self.flash_alpha > 0:
@@ -503,11 +502,12 @@ class Game:
                 self.jumpscare_active = False
                 
     def go_to_home(self):
-        """Kembali ke home menu (reset state)"""
         self.in_menu = True
         self.in_level_select = False
         self.game_over = False
         self.win = False
+        self.show_victory_screen = False  # ← TAMBAH INI
+        self.victory_timer = 0            # ← TAMBAH INI
         self.jumpscare_active = False
         self.show_path = False
         self.path_points = []
@@ -565,6 +565,7 @@ class Game:
             self.win = True
             if self.current_level == 5:
                 self.show_victory_screen = True
+                self.victory_timer = 300
             self.handle_win()  # ← PANGGIL FUNGSI INI
     
     def trigger_jumpscare(self):
@@ -720,8 +721,9 @@ class Game:
                 
                 if event.type == pygame.KEYDOWN:
                     # 🔥 CEK APAKAH VICTORY SCREEN AKTIF (LEVEL 5)
+                    # Countdown victory timer
                     if self.show_victory_screen:
-                        if event.key == pygame.K_RETURN:
+                        if event.key == pygame.K_RETURN and self.victory_timer <= 0:
                             self.show_victory_screen = False
                             self.go_to_home()
                         # Skip semua tombol lain selama victory screen
@@ -742,7 +744,7 @@ class Game:
                     
                     # ESC: balik ke Home (kalau lagi main / game over / win)
                     if event.key == pygame.K_ESCAPE:
-                        if not self.in_menu and not self.in_level_select:
+                        if not self.in_menu and not self.in_level_select and not self.show_victory_screen:
                             self.go_to_home()
                     
                     # 🔥 GERAK MANUAL (HANYA KALAU GAME AKTIF)
@@ -760,7 +762,7 @@ class Game:
                             self.player.move(0, 1, self.grid)
                             self.show_path = False
                         elif event.key == pygame.K_SPACE:
-                            self.show_path()
+                            self.calculate_path()
             
             # ===== UPDATE =====
             if not self.game_over and not self.win and not self.jumpscare_active:
@@ -777,6 +779,10 @@ class Game:
                 self.update_ghosts()
                 self.player.update()
                 self.check_collisions()
+
+            # ← TAMBAHKAN INI (di luar if not self.win)
+            if self.show_victory_screen and self.victory_timer > 0:
+                self.victory_timer -= 1
             
             # ===== DRAW =====
             self.draw_background()
