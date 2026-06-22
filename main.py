@@ -32,51 +32,68 @@ class Menu:
         # Ukuran tombol
         self.btn_width = 250
         self.btn_height = 60
-        self.btn_x = SCREEN_WIDTH // 2 - self.btn_width // 2
+    
+    def get_screen_size(self):
+        """Dapatkan ukuran layar saat ini (dynamic)"""
+        return self.screen.get_width(), self.screen.get_height()
     
     def draw(self):
+        """Gambar menu dengan posisi CENTER (dynamic)"""
+        screen_width, screen_height = self.get_screen_size()
+        
+        # Background
         self.screen.fill((15, 15, 30))
         
-        # Title dengan shadow
+        # Title dengan shadow (posisi di tengah)
         title_shadow = self.font_title.render("ESCAPE THE GHOST", True, (0, 0, 0))
-        self.screen.blit(title_shadow, (SCREEN_WIDTH//2 - title_shadow.get_width()//2 + 4, 84))
         title = self.font_title.render("ESCAPE THE GHOST", True, (255, 255, 255))
-        self.screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 80))
+        
+        # Posisi title di tengah
+        title_x = screen_width // 2 - title.get_width() // 2
+        self.screen.blit(title_shadow, (title_x + 4, 84))
+        self.screen.blit(title, (title_x, 80))
         
         # Subtitle
         sub = self.font_info.render("KKA Project - Survival Horror Maze", True, (150, 150, 200))
-        self.screen.blit(sub, (SCREEN_WIDTH//2 - sub.get_width()//2, 170))
+        sub_x = screen_width // 2 - sub.get_width() // 2
+        self.screen.blit(sub, (sub_x, 170))
         
-        # Menu Options (dengan border kotak)
+        # Menu Options (dengan posisi di tengah)
+        total_height = len(self.options) * (self.btn_height + 20) - 20
+        start_y = (screen_height - total_height) // 2 + 50  # +50 biar agak turun dikit
+        
         for i, opt in enumerate(self.options):
-            y_pos = 280 + i * (self.btn_height + 20)
+            y_pos = start_y + i * (self.btn_height + 20)
+            btn_x = screen_width // 2 - self.btn_width // 2
             
             # Warna tombol
             if i == self.selected_option:
                 # Tombol yang dipilih (border kuning)
                 pygame.draw.rect(self.screen, self.btn_selected_color, 
-                               (self.btn_x - 4, y_pos - 4, self.btn_width + 8, self.btn_height + 8), 4)
+                               (btn_x - 4, y_pos - 4, self.btn_width + 8, self.btn_height + 8), 4)
                 pygame.draw.rect(self.screen, self.btn_hover_color, 
-                               (self.btn_x, y_pos, self.btn_width, self.btn_height))
+                               (btn_x, y_pos, self.btn_width, self.btn_height))
                 color = (255, 255, 255)
             else:
                 # Tombol biasa
                 pygame.draw.rect(self.screen, self.btn_color, 
-                               (self.btn_x, y_pos, self.btn_width, self.btn_height))
+                               (btn_x, y_pos, self.btn_width, self.btn_height))
                 color = self.btn_text_color
             
             # Text di tombol
             text = self.font_button.render(opt, True, color)
-            self.screen.blit(text, (SCREEN_WIDTH//2 - text.get_width()//2, y_pos + 10))
+            text_x = screen_width // 2 - text.get_width() // 2
+            self.screen.blit(text, (text_x, y_pos + 10))
         
-        # Info level terbuka
+        # Info level terbuka (di kiri bawah)
         info = self.font_info.render(f"Level Terbuka: {self.lm.unlocked_level} / {self.lm.get_total_levels()}", True, (150, 150, 150))
-        self.screen.blit(info, (20, SCREEN_HEIGHT - 50))
+        self.screen.blit(info, (20, screen_height - 50))
         
-        # Credits
+        # Credits (di tengah bawah)
         credit = self.font_info.render("UP/DOWN: Navigate | ENTER: Select", True, (100, 100, 100))
-        self.screen.blit(credit, (SCREEN_WIDTH//2 - credit.get_width()//2, SCREEN_HEIGHT - 30))
-        
+        credit_x = screen_width // 2 - credit.get_width() // 2
+        self.screen.blit(credit, (credit_x, screen_height - 30))
+    
     def handle_input(self, event):
         """Handle input di menu"""
         if event.type == pygame.KEYDOWN:
@@ -194,19 +211,26 @@ class Game:
         self.selected_level_index = 0
     
     def draw_level_selection(self):
-        """Gambar layar pilih level dengan border kotak"""
+        """Gambar layar pilih level dengan posisi CENTER (dynamic)"""
+        screen_width, screen_height = self.screen.get_width(), self.screen.get_height()
+        
         self.screen.fill((15, 15, 30))
             
         title = self.font_big.render("SELECT LEVEL", True, (255, 255, 255))
-        self.screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 80))
+        title_x = screen_width // 2 - title.get_width() // 2
+        self.screen.blit(title, (title_x, 80))
             
         # Ukuran tombol level
         btn_width = 300
         btn_height = 50
-        btn_x = SCREEN_WIDTH // 2 - btn_width // 2
-            
+        
+        # Posisi tombol di tengah
+        total_height = len(self.level_options) * (btn_height + 15) - 15
+        start_y = (screen_height - total_height) // 2 + 50
+        
         for i, level_id in enumerate(self.level_options):
-            y_pos = 180 + i * (btn_height + 15)
+            y_pos = start_y + i * (btn_height + 15)
+            btn_x = screen_width // 2 - btn_width // 2
             config = self.lm.get_level_config(level_id)
                 
             if i == self.selected_level_index:
@@ -227,23 +251,12 @@ class Game:
             # Text level
             lock_icon = "" if self.lm.is_level_unlocked(level_id) else "🔒 "
             text = self.font_small.render(f"{lock_icon}Level {level_id}: {config['name']}", True, color)
-            self.screen.blit(text, (SCREEN_WIDTH//2 - text.get_width()//2, y_pos + 10))
+            text_x = screen_width // 2 - text.get_width() // 2
+            self.screen.blit(text, (text_x, y_pos + 10))
             
         info = self.font_small.render("UP/DOWN: Navigate | ENTER: Play | ESC: Back", True, (150, 150, 150))
-        self.screen.blit(info, (SCREEN_WIDTH//2 - info.get_width()//2, SCREEN_HEIGHT - 50))
-    
-    def handle_level_selection_input(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                self.selected_level_index = (self.selected_level_index - 1) % len(self.level_options)
-            elif event.key == pygame.K_DOWN:
-                self.selected_level_index = (self.selected_level_index + 1) % len(self.level_options)
-            elif event.key == pygame.K_RETURN:
-                level_id = self.level_options[self.selected_level_index]
-                self.start_game(level_id)
-            elif event.key == pygame.K_ESCAPE:
-                self.in_level_select = False
-                self.in_menu = True
+        info_x = screen_width // 2 - info.get_width() // 2
+        self.screen.blit(info, (info_x, screen_height - 50))
     
     # ========== GAME METHODS ==========
     
