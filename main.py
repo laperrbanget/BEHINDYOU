@@ -318,6 +318,8 @@ class Game:
         # Jumpscare state
         self.jumpscare_active = False
         self.jumpscare_timer = 0
+        
+        self.show_victory_screen = False
     
     def draw_background(self):
         
@@ -329,6 +331,12 @@ class Game:
     def draw_grid(self):
         """Gambar grid pake MazeRenderer"""
         self.maze_renderer.draw()
+        
+        for row in range(GRID_HEIGHT):
+            for col in range(GRID_WIDTH):
+                x = col * CELL_SIZE
+                y = row * CELL_SIZE
+                pygame.draw.rect(self.screen, WHITE, (x, y, CELL_SIZE, CELL_SIZE), 1)
     
     def draw_path(self):
         """Gambar garis jalur terpendek (TANPA efek samping)"""
@@ -447,10 +455,32 @@ class Game:
             overlay.set_alpha(180)
             overlay.fill(BLACK)
             self.screen.blit(overlay, (0,0))
+            
+            # 🔥 CEK APAKAH LEVEL 5 DAN VICTORY SCREEN AKTIF
+            if self.current_level == 5 and self.show_victory_screen:
+                # Confetti!
+                self.draw_confetti()
+            
+            # Pesan khusus level 5 (tanpa tombol, biar nikmatin dulu)
+            win_text = self.font_big.render("🎉 YOU ESCAPED THE GHOST! 🎉", True, GREEN)
+            self.screen.blit(win_text, (SCREEN_WIDTH//2 - win_text.get_width()//2, SCREEN_HEIGHT//2 - 60))
+            
+            sub_text = self.font_small.render("You have completed all levels! Behind You...", True, WHITE)
+            self.screen.blit(sub_text, (SCREEN_WIDTH//2 - sub_text.get_width()//2, SCREEN_HEIGHT//2))
+            
+            sub_text2 = self.font_small.render("🎊 CONGRATULATIONS! 🎊", True, (255, 215, 0))
+            self.screen.blit(sub_text2, (SCREEN_WIDTH//2 - sub_text2.get_width()//2, SCREEN_HEIGHT//2 + 40))
+            
+            # 🔥 TOMBOL ENTER UNTUK KE HOME
+            continue_text = self.font_small.render("Press ENTER to continue to Home", True, WHITE)
+            self.screen.blit(continue_text, (SCREEN_WIDTH//2 - continue_text.get_width()//2, SCREEN_HEIGHT//2 + 120))
+        else:
+            # Pesan biasa (level 1-4)
             win_text = self.font_big.render("🎉 YOU ESCAPED! 🎉", True, GREEN)
-            self.screen.blit(win_text, (SCREEN_WIDTH//2 - 130, SCREEN_HEIGHT//2))
-            next_text = self.font_small.render("Press R for Next Level", True, WHITE)
-            self.screen.blit(next_text, (SCREEN_WIDTH//2 - 90, SCREEN_HEIGHT//2 + 50))
+            self.screen.blit(win_text, (SCREEN_WIDTH//2 - win_text.get_width()//2, SCREEN_HEIGHT//2 - 30))
+            
+            restart_text = self.font_small.render("Press R for Next Level | ESC for Home", True, WHITE)
+            self.screen.blit(restart_text, (SCREEN_WIDTH//2 - restart_text.get_width()//2, SCREEN_HEIGHT//2 + 100))
     
     def draw_flash_effect(self):
         if self.flash_alpha > 0:
@@ -471,6 +501,41 @@ class Game:
             self.jumpscare_timer -= 1
             if self.jumpscare_timer <= 0:
                 self.jumpscare_active = False
+                
+    def go_to_home(self):
+        """Kembali ke home menu (reset state)"""
+        self.in_menu = True
+        self.in_level_select = False
+        self.game_over = False
+        self.win = False
+        self.jumpscare_active = False
+        self.show_path = False
+        self.path_points = []
+        if hasattr(self, 'confetti_particles'):
+            self.confetti_particles = []
+                                             
+    def draw_confetti(self):
+        """Gambar confetti buat kemenangan level 5"""
+        if not hasattr(self, 'confetti_particles'):
+            self.confetti_particles = []
+            import random
+            for _ in range(100):
+                self.confetti_particles.append({
+                    'x': random.randint(0, SCREEN_WIDTH),
+                    'y': random.randint(0, SCREEN_HEIGHT),
+                    'vx': random.uniform(-2, 2),
+                    'vy': random.uniform(1, 4),
+                    'color': random.choice([(255,0,0), (0,255,0), (0,0,255), (255,255,0), (255,0,255), (0,255,255)]),
+                    'size': random.randint(4, 10)
+                })
+        
+        for p in self.confetti_particles:
+            p['x'] += p['vx']
+            p['y'] += p['vy']
+            if p['y'] > SCREEN_HEIGHT:
+                p['y'] = -10
+                p['x'] = random.randint(0, SCREEN_WIDTH)
+            pygame.draw.circle(self.screen, p['color'], (int(p['x']), int(p['y'])), p['size'])
     
     # ========== GAME LOGIC METHODS ==========
     
@@ -498,6 +563,8 @@ class Game:
         # Cek sampai pintu
         if self.player.get_position() == self.exit_pos:
             self.win = True
+            if self.current_level == 5:
+                self.show_victory_screen = True
             self.handle_win()  # ← PANGGIL FUNGSI INI
     
     def trigger_jumpscare(self):
@@ -652,6 +719,33 @@ class Game:
                     sys.exit()
                 
                 if event.type == pygame.KEYDOWN:
+                    # 🔥 CEK APAKAH VICTORY SCREEN AKTIF (LEVEL 5)
+                    if self.show_victory_screen:
+                        if event.key == pygame.K_RETURN:
+                            self.show_victory_screen = False
+                            self.go_to_home()
+                        # Skip semua tombol lain selama victory screen
+                        continue
+                    
+                    # 🔥 GAME OVER / WIN / MAIN
+                    if event.key == pygame.K_r:
+                        if self.win:
+                            # Kalau menang, lanjut ke level berikutnya
+                            if self.current_level < self.lm.get_total_levels():
+                                self.reset_game(next_level=True)
+                            else:
+                                # Udah level 5, tetep di level 5
+                                self.reset_game(next_level=False)
+                        else:
+                            # Kalau kalah, restart level yang sama
+                            self.reset_game(next_level=False)
+                    
+                    # ESC: balik ke Home (kalau lagi main / game over / win)
+                    if event.key == pygame.K_ESCAPE:
+                        if not self.in_menu and not self.in_level_select:
+                            self.go_to_home()
+                    
+                    # 🔥 GERAK MANUAL (HANYA KALAU GAME AKTIF)
                     if not self.game_over and not self.win and not self.jumpscare_active:
                         if event.key == pygame.K_UP:
                             self.player.move(-1, 0, self.grid)
@@ -666,15 +760,7 @@ class Game:
                             self.player.move(0, 1, self.grid)
                             self.show_path = False
                         elif event.key == pygame.K_SPACE:
-                            self.calculate_path()
-                    
-                    if event.key == pygame.K_r:
-                        if self.win:
-                            # Kalau menang, lanjut ke level berikutnya
-                            self.reset_game(next_level=True)
-                        else:
-                            # Kalau kalah, restart level yang sama
-                            self.reset_game(next_level=False)
+                            self.show_path()
             
             # ===== UPDATE =====
             if not self.game_over and not self.win and not self.jumpscare_active:
