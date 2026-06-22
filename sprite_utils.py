@@ -8,11 +8,9 @@ def load_sprite(filename, default_color, shape="rect", default_emoji=None):
     try:
         full_path = os.path.join(IMAGES_DIR, filename)
         img = pygame.image.load(full_path).convert_alpha()
-        # 🔥 PAKSA RESIZE ke CELL_SIZE - 10 biar nge-pas!
         img = pygame.transform.scale(img, (CELL_SIZE - 10, CELL_SIZE - 10))
         return img
     except:
-        # Fallback: buat bentuk sendiri
         img = pygame.Surface((CELL_SIZE - 10, CELL_SIZE - 10), pygame.SRCALPHA)
         
         if shape == "rect":
@@ -30,7 +28,6 @@ def load_sprite(filename, default_color, shape="rect", default_emoji=None):
             ]
             pygame.draw.polygon(img, default_color, points)
         
-        # Tambah emoji di tengah
         if default_emoji:
             font = pygame.font.Font(None, CELL_SIZE // 2)
             emoji_surf = font.render(default_emoji, True, (255, 255, 255))
@@ -38,21 +35,30 @@ def load_sprite(filename, default_color, shape="rect", default_emoji=None):
             img.blit(emoji_surf, emoji_rect)
         
         return img
-    
+
+
 def load_wall_texture():
-    """Load wall texture dengan ukuran PAS CELL_SIZE (tanpa padding)"""
-    try:
-        full_path = os.path.join(IMAGES_DIR, "wall.png")
-        img = pygame.image.load(full_path).convert()
-        # PAKSA ukuran ke CELL_SIZE x CELL_SIZE
-        img = pygame.transform.scale(img, (CELL_SIZE, CELL_SIZE))
-        return img
-    except:
-        # Fallback: kotak abu-abu dengan border
-        img = pygame.Surface((CELL_SIZE, CELL_SIZE))
-        img.fill(DARK_GRAY)
-        pygame.draw.rect(img, BLACK, img.get_rect(), 2)
-        # Tanda X
-        pygame.draw.line(img, BLACK, (5, 5), (CELL_SIZE-5, CELL_SIZE-5), 2)
-        pygame.draw.line(img, BLACK, (CELL_SIZE-5, 5), (5, CELL_SIZE-5), 2)
-        return img
+    """Load wall texture - PAKE X DULU (biar kontras!)"""
+    # 🔥 LANGSUNG PAKE X TEXTURE
+    return create_x_texture()
+
+
+def create_x_texture():
+    """Buat texture dinding pake huruf X kapital - KONTRAST BANGET!"""
+    surf = pygame.Surface((CELL_SIZE, CELL_SIZE))
+    
+    # Background merah gelap (kontras)
+    surf.fill((15, 5, 5))
+    
+    # Font buat huruf X (besar banget)
+    font = pygame.font.Font(None, CELL_SIZE - 4)
+    text = font.render("X", True, (255, 255, 255))  
+    
+    # Posisi di tengah
+    text_rect = text.get_rect(center=(CELL_SIZE//2, CELL_SIZE//2 + 2))
+    surf.blit(text, text_rect)
+    
+    # Border tipis
+    pygame.draw.rect(surf, (80, 20, 20), (0, 0, CELL_SIZE, CELL_SIZE), 1)
+    
+    return surf

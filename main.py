@@ -9,6 +9,7 @@ from search import bfs_path
 from sprite_utils import load_sprite
 from level_manager import LevelManager
 from menu import Menu
+from maze_renderer import MazeRenderer
 from sprite_utils import load_sprite, load_wall_texture
 import os
 
@@ -40,10 +41,18 @@ class Game:
         # Level Manager
         self.lm = LevelManager()
         self.current_level = self.lm.unlocked_level
-        
-        # Load assets
+
         self.load_assets()
         self.load_sounds()
+        
+         # 🔥 ===== BUAT MAZE RENDERER (TAMBAHKAN INI!) =====
+        # Grid belum ada, kita bikin temporary dulu
+        self.grid = None
+        self.maze_renderer = MazeRenderer(
+            self.screen,
+            self.grid,
+            self.wall_texture
+        )
         
         # Menu
         self.menu = Menu(self.screen, self.lm)
@@ -244,6 +253,9 @@ class Game:
             pass
         
         self.grid, self.exit_pos = get_grid()
+
+        if hasattr(self, 'maze_renderer'):
+            self.maze_renderer.grid = self.grid
         
         # Dapatkan konfigurasi level
         config = self.lm.get_level_config(self.current_level)
@@ -315,20 +327,8 @@ class Game:
             self.screen.fill(DARK_GRAY_BG)
     
     def draw_grid(self):
-        """Gambar grid dengan WALL TEXTURE PNG dan jalan lebih gelap"""
-        for row in range(GRID_HEIGHT):
-            for col in range(GRID_WIDTH):
-                x = col * CELL_SIZE
-                y = row * CELL_SIZE
-                
-                if self.grid[row][col] == 1:
-                    # DINDING: pake texture PNG
-                    self.screen.blit(self.wall_texture, (x, y))
-                else:
-                    # 🔥 JALAN: lebih gelap (23, 23, 35) dan (33, 33, 45)
-                    color = (23, 23, 35) if (row + col) % 2 == 0 else (33, 33, 45)
-                    pygame.draw.rect(self.screen, color, (x, y, CELL_SIZE, CELL_SIZE))
-                    pygame.draw.rect(self.screen, LIGHT_GRAY, (x, y, CELL_SIZE, CELL_SIZE), 1)
+        """Gambar grid pake MazeRenderer"""
+        self.maze_renderer.draw()
     
     def draw_path(self):
         """Gambar garis jalur terpendek (TANPA efek samping)"""

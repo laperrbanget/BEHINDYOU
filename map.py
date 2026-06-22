@@ -283,12 +283,60 @@ def get_random_exit(maze):
 
     return random.choice(top_candidates)
 
+# ─────────────────────────────────────────────
+#  VISUALISASI MAZE (BUAT DEBUG / PREVIEW)
+# ─────────────────────────────────────────────
+
+def print_maze(maze, title="MAZE"):
+    """
+    Cetak maze ke console dengan:
+    - X = dinding (merah/kontras)
+    - . = jalan
+    - S = start (0,0)
+    - E = exit (otomatis detect)
+    """
+    print("\n" + "="*50)
+    print(f"  {title}")
+    print("="*50)
+    
+    # Cari posisi exit (kalo ada)
+    exit_pos = None
+    for r in range(len(maze)):
+        for c in range(len(maze[0])):
+            if maze[r][c] == 2:  # 2 = exit (kalo diset)
+                exit_pos = (r, c)
+    
+    for r, row in enumerate(maze):
+        row_str = ""
+        for c, cell in enumerate(row):
+            if (r, c) == (0, 0):
+                row_str += " S "   # Start
+            elif exit_pos and (r, c) == exit_pos:
+                row_str += " E "   # Exit
+            elif cell == 1:
+                row_str += " X "   # Dinding pake X kapital
+            else:
+                row_str += " . "   # Jalan
+        print(row_str)
+    
+    print("="*50 + "\n")
+
+
+def print_all_maps():
+    """Cetak semua 8 map yang tersedia"""
+    for i, maze in enumerate(ALL_MAPS, 1):
+        print_maze(maze, f"MAP {i} — {count_walls(maze)} walls")
+
+
+def count_walls(maze):
+    """Hitung jumlah dinding di maze"""
+    return sum(1 for row in maze for cell in row if cell == 1)
 
 # ─────────────────────────────────────────────
 #  PUBLIC API
 # ─────────────────────────────────────────────
 
-def get_grid(use_generator=False, wall_ratio=0.30):
+def get_grid(use_generator=False, wall_ratio=0.30, verbose=True):
     """
     Return (maze, exit_pos)
 
@@ -298,6 +346,7 @@ def get_grid(use_generator=False, wall_ratio=0.30):
     use_generator : True  → map baru random setiap kali
                     False → pilih dari 8 pre-built maps (default)
     wall_ratio    : hanya dipakai kalau use_generator=True (0.25–0.35)
+    verbose       : True → cetak maze ke console (default)
     """
     if use_generator:
         maze = generate_chaotic_map(wall_ratio=wall_ratio)
@@ -305,4 +354,12 @@ def get_grid(use_generator=False, wall_ratio=0.30):
         maze = [row[:] for row in random.choice(ALL_MAPS)]  # copy supaya aman
 
     exit_pos = get_random_exit(maze)
+    
+    # 🔥 CETAK MAZE KE CONSOLE (kalo verbose=True)
+    if verbose:
+        print_maze(maze, f"MAZE {random.choice(['🔥', '👻', '💀', '⚰️', '🕷️'])} ACTIVE")
+        print(f"  Exit position: {exit_pos}")
+        print(f"  Total walls: {count_walls(maze)} ({count_walls(maze)*100//225}%)")
+        print("="*50 + "\n")
+    
     return maze, exit_pos
