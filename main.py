@@ -86,14 +86,28 @@ class Game:
         """Load sound effects"""
         try:
             self.teleport_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "teleport.mp3"))
+            self.teleport_sound.set_volume(0.7)
+            
             self.hit_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "hit.mp3"))
-            self.scare_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "scare.mp3"))
+            self.hit_sound.set_volume(0.8)
+            
+            self.scream_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "orang_ditusuk.mp3"))
+            self.scream_sound.set_volume(1.0)
+            
+            self.stab_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "knife_stab.mp3"))
+            self.stab_sound.set_volume(1.0)
+            
+            self.behindyou_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "behindyou_effect.mp3"))
+            self.behindyou_sound.set_volume(0.9)
+            
             self.play_level_music()
-        except:
-            print("Sound files not found — playing without sound")
+
+        except Exception as e:
             self.teleport_sound = None
             self.hit_sound = None
-            self.scare_sound = None
+            self.scream_sound = None
+            self.stab_sound = None
+            self.behindyou_sound = None
     
     def play_level_music(self):
 
@@ -103,11 +117,14 @@ class Game:
             music_file = "bg_music.mp3"
 
         try:
+            print("LEVEL:", self.current_level)
+            print("MUSIC:", music_file)
+
             pygame.mixer.music.load(
                 os.path.join(SOUNDS_DIR, music_file)
             )
 
-            pygame.mixer.music.set_volume(0.3)
+            pygame.mixer.music.set_volume(0.8)
             pygame.mixer.music.play(-1)
 
         except Exception as e:
@@ -295,40 +312,31 @@ class Game:
                     pygame.draw.rect(self.screen, LIGHT_GRAY, (x, y, CELL_SIZE, CELL_SIZE), 1)
     
     def draw_path(self):
-        """Gambar garis jalur terpendek (Auto-Solve Visualization)"""
-        try:
-            if not self.show_path:
-                return
+        """Gambar garis jalur terpendek (TANPA efek samping)"""
+        if not self.show_path:
+            return
+        if not self.path_points or len(self.path_points) < 2:
+            return
+        
+        for i in range(len(self.path_points) - 1):
+            start = self.path_points[i]
+            end = self.path_points[i+1]
             
-            if not self.path_points or len(self.path_points) < 2:
-                return
+            if not start or not end:
+                continue
             
-            # Gambar garis
-            for i in range(len(self.path_points) - 1):
-                start = self.path_points[i]
-                end = self.path_points[i+1]
-                
-                # Cek validasi posisi
-                if not start or not end:
-                    continue
-                
-                start_px = start[1] * CELL_SIZE + CELL_SIZE//2
-                start_py = start[0] * CELL_SIZE + CELL_SIZE//2
-                end_px = end[1] * CELL_SIZE + CELL_SIZE//2
-                end_py = end[0] * CELL_SIZE + CELL_SIZE//2
-                
-                # Garis cyan terang
-                pygame.draw.line(self.screen, (0, 255, 255), (start_px, start_py), (end_px, end_py), 4)
+            start_px = start[1] * CELL_SIZE + CELL_SIZE//2
+            start_py = start[0] * CELL_SIZE + CELL_SIZE//2
+            end_px = end[1] * CELL_SIZE + CELL_SIZE//2
+            end_py = end[0] * CELL_SIZE + CELL_SIZE//2
             
-            # Gambar titik di setiap sel (pakai set biar gak dobel)
-            for point in set(self.path_points):
-                if point:
-                    px = point[1] * CELL_SIZE + CELL_SIZE//2
-                    py = point[0] * CELL_SIZE + CELL_SIZE//2
-                    pygame.draw.circle(self.screen, (255, 255, 0), (px, py), 5)
-        except Exception as e:
-            print(f"⚠️ Error di draw_path: {e}")
-            # Jangan matikan game, cukup skip gambar
+            pygame.draw.line(self.screen, (0, 255, 255), (start_px, start_py), (end_px, end_py), 4)
+        
+        for point in self.path_points:
+            if point:
+                px = point[1] * CELL_SIZE + CELL_SIZE//2
+                py = point[0] * CELL_SIZE + CELL_SIZE//2
+                pygame.draw.circle(self.screen, (255, 255, 0), (px, py), 5)
     
     def draw_entities(self):
         """Gambar player (multi-direction), hantu, dan pintu"""
@@ -474,12 +482,23 @@ class Game:
             self.handle_win()  # ← PANGGIL FUNGSI INI
     
     def trigger_jumpscare(self):
-        """Trigger jumpscare (game over) - durasi 6 detik"""
+        """Trigger jumpscare (game over)"""
+        pygame.mixer.music.fadeout(500)
+        
+        if hasattr(self, 'stab_sound') and self.stab_sound:
+            self.stab_sound.play()
+        
+        pygame.time.delay(1000)
+        
+        if hasattr(self, 'behindyou_sound') and self.behindyou_sound:
+            self.behindyou_sound.play()
+        
         self.jumpscare_active = True
-        self.jumpscare_timer = 360  # 🔥 6 detik (60 FPS × 6 = 360 frame)
+        self.jumpscare_timer = 360
         self.game_over = True
-        if hasattr(self, 'scare_sound') and self.scare_sound:
-            self.scare_sound.play()
+        
+        if hasattr(self, 'scream_sound') and self.scream_sound:
+            self.scream_sound.play()
     
     def teleport_ghosts(self):
         """Teleport SEMUA hantu ke posisi random"""
@@ -513,31 +532,22 @@ class Game:
             if hasattr(self, 'teleport_sound') and self.teleport_sound:
                 self.teleport_sound.play()
     
-    def show_path(self):
-        """Tampilkan jalur terpendek (Auto-Solve Visualization)"""
-        try:
-            start = self.player.get_position()
-            goal = self.exit_pos
-            
-            # Cek apakah start dan goal valid
-            if not start or not goal:
-                print("Start atau goal tidak valid!")
-                self.show_path = False
-                self.path_points = []
-                return
-            
-            path = bfs_path(self.grid, start, goal)
-            
-            if path and len(path) > 1:
-                self.path_points = path
-                self.show_path = True
-                print(f"✅ Path ditemukan! {len(path)} langkah")
-            else:
-                self.show_path = False
-                self.path_points = []
-                print("❌ Tidak ada jalur ke pintu!")
-        except Exception as e:
-            print(f"⚠️ Error di show_path: {e}")
+    def calculate_path(self):
+        """Tampilkan jalur terpendek"""
+        start = self.player.get_position()
+        goal = self.exit_pos
+        
+        if not start or not goal:
+            self.show_path = False
+            self.path_points = []
+            return
+        
+        path = bfs_path(self.grid, start, goal)
+        
+        if path and len(path) > 1:
+            self.path_points = path
+            self.show_path = True
+        else:
             self.show_path = False
             self.path_points = []
     
@@ -629,7 +639,7 @@ class Game:
                             self.player.move(0, 1, self.grid)
                             self.show_path = False
                         elif event.key == pygame.K_SPACE:
-                            self.show_path()
+                            self.calculate_path()
                     
                     if event.key == pygame.K_r:
                         if self.win:
