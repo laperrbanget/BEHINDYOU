@@ -91,6 +91,9 @@ class Game:
             self.hit_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "hit.mp3"))
             self.scare_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "scare.mp3"))
             self.play_level_music()
+            self.scream_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "orang_ditusuk.mp3"))
+            self.stab_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "knife_stab.mp3"))
+
         except:
             print("Sound files not found — playing without sound")
             self.teleport_sound = None
@@ -462,12 +465,17 @@ class Game:
             self.handle_win()  # ← PANGGIL FUNGSI INI
     
     def trigger_jumpscare(self):
-        """Trigger jumpscare (game over) - durasi 6 detik"""
+        """Trigger jumpscare (game over)"""
+        pygame.mixer.music.fadeout(500)
+        if hasattr(self, 'stab_sound') and self.stab_sound:
+            self.stab_sound.play()
+        pygame.time.delay(300)
         self.jumpscare_active = True
-        self.jumpscare_timer = 360  # 🔥 6 detik (60 FPS × 6 = 360 frame)
+        # durasi jumpscare 6 detik
+        self.jumpscare_timer = 360
         self.game_over = True
-        if hasattr(self, 'scare_sound') and self.scare_sound:
-            self.scare_sound.play()
+        if hasattr(self, 'scream_sound') and self.scream_sound:
+            self.scream_sound.play()
     
     def teleport_ghosts(self):
         """Teleport SEMUA hantu ke posisi random"""
