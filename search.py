@@ -1,10 +1,10 @@
-# search.py - Algoritma BFS untuk auto-solve (VERSI AMAN)
+# search.py - Algoritma BFS (AMAN)
 
 from collections import deque
 
 def bfs_path(grid, start, goal):
     """Cari jalur terpendek dari start ke goal pake BFS"""
-    # Cek validasi input
+    # Validasi input
     if not grid or not start or not goal:
         return []
     
@@ -39,4 +39,4 @@ def bfs_path(grid, start, goal):
                     visited.add((nx, ny))
                     queue.append(((nx, ny), path + [(nx, ny)]))
     
-    return []  # Gak ada jalur
+    return []

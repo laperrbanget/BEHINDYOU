@@ -87,23 +87,29 @@ class Game:
     def load_sounds(self):
         """Load sound effects"""
         try:
-            print("Loading sounds...")
             self.teleport_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "teleport.mp3"))
-            print("teleport OK")
+            self.teleport_sound.set_volume(0.7)
+            
             self.hit_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "hit.mp3"))
-            print("scare OK")
+            self.hit_sound.set_volume(0.8)
+            
             self.scream_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "orang_ditusuk.mp3"))
-            print("scream OK")
+            self.scream_sound.set_volume(1.0)
+            
             self.stab_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "knife_stab.mp3"))
-            print("stab OK")
+            self.stab_sound.set_volume(1.0)
+            
+            self.behindyou_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "behindyou_effect.mp3"))
+            self.behindyou_sound.set_volume(0.9)
+            
             self.play_level_music()
-            print("music OK")
 
         except Exception as e:
-            print("ERROR:", e)
             self.teleport_sound = None
             self.hit_sound = None
-            self.scare_sound = None
+            self.scream_sound = None
+            self.stab_sound = None
+            self.behindyou_sound = None
     
     def play_level_music(self):
 
@@ -294,40 +300,30 @@ class Game:
                     pygame.draw.rect(self.screen, LIGHT_GRAY, (x, y, CELL_SIZE, CELL_SIZE), 1)
     
     def draw_path(self):
-        """Gambar garis jalur terpendek (Auto-Solve Visualization)"""
-        try:
-            if not self.show_path:
-                return
+        if not self.show_path:
+            return
+        if not self.path_points or len(self.path_points) < 2:
+            return
+        
+        for i in range(len(self.path_points) - 1):
+            start = self.path_points[i]
+            end = self.path_points[i+1]
             
-            if not self.path_points or len(self.path_points) < 2:
-                return
+            if not start or not end:
+                continue
             
-            # Gambar garis
-            for i in range(len(self.path_points) - 1):
-                start = self.path_points[i]
-                end = self.path_points[i+1]
-                
-                # Cek validasi posisi
-                if not start or not end:
-                    continue
-                
-                start_px = start[1] * CELL_SIZE + CELL_SIZE//2
-                start_py = start[0] * CELL_SIZE + CELL_SIZE//2
-                end_px = end[1] * CELL_SIZE + CELL_SIZE//2
-                end_py = end[0] * CELL_SIZE + CELL_SIZE//2
-                
-                # Garis cyan terang
-                pygame.draw.line(self.screen, (0, 255, 255), (start_px, start_py), (end_px, end_py), 4)
+            start_px = start[1] * CELL_SIZE + CELL_SIZE//2
+            start_py = start[0] * CELL_SIZE + CELL_SIZE//2
+            end_px = end[1] * CELL_SIZE + CELL_SIZE//2
+            end_py = end[0] * CELL_SIZE + CELL_SIZE//2
             
-            # Gambar titik di setiap sel (pakai set biar gak dobel)
-            for point in set(self.path_points):
-                if point:
-                    px = point[1] * CELL_SIZE + CELL_SIZE//2
-                    py = point[0] * CELL_SIZE + CELL_SIZE//2
-                    pygame.draw.circle(self.screen, (255, 255, 0), (px, py), 5)
-        except Exception as e:
-            print(f"⚠️ Error di draw_path: {e}")
-            # Jangan matikan game, cukup skip gambar
+            pygame.draw.line(self.screen, (0, 255, 255), (start_px, start_py), (end_px, end_py), 4)
+        
+        for point in self.path_points:
+            if point:
+                px = point[1] * CELL_SIZE + CELL_SIZE//2
+                py = point[0] * CELL_SIZE + CELL_SIZE//2
+                pygame.draw.circle(self.screen, (255, 255, 0), (px, py), 5)
     
     def draw_entities(self):
         """Gambar player (multi-direction), hantu, dan pintu"""
@@ -475,13 +471,19 @@ class Game:
     def trigger_jumpscare(self):
         """Trigger jumpscare (game over)"""
         pygame.mixer.music.fadeout(500)
+        
         if hasattr(self, 'stab_sound') and self.stab_sound:
             self.stab_sound.play()
+        
         pygame.time.delay(1000)
+        
+        if hasattr(self, 'behindyou_sound') and self.behindyou_sound:
+            self.behindyou_sound.play()
+        
         self.jumpscare_active = True
-        # durasi jumpscare 6 detik
         self.jumpscare_timer = 360
         self.game_over = True
+        
         if hasattr(self, 'scream_sound') and self.scream_sound:
             self.scream_sound.play()
     
@@ -518,30 +520,21 @@ class Game:
                 self.teleport_sound.play()
     
     def show_path(self):
-        """Tampilkan jalur terpendek (Auto-Solve Visualization)"""
-        try:
-            start = self.player.get_position()
-            goal = self.exit_pos
-            
-            # Cek apakah start dan goal valid
-            if not start or not goal:
-                print("Start atau goal tidak valid!")
-                self.show_path = False
-                self.path_points = []
-                return
-            
-            path = bfs_path(self.grid, start, goal)
-            
-            if path and len(path) > 1:
-                self.path_points = path
-                self.show_path = True
-                print(f"✅ Path ditemukan! {len(path)} langkah")
-            else:
-                self.show_path = False
-                self.path_points = []
-                print("❌ Tidak ada jalur ke pintu!")
-        except Exception as e:
-            print(f"⚠️ Error di show_path: {e}")
+        """Tampilkan jalur terpendek"""
+        start = self.player.get_position()
+        goal = self.exit_pos
+        
+        if not start or not goal:
+            self.show_path = False
+            self.path_points = []
+            return
+        
+        path = bfs_path(self.grid, start, goal)
+        
+        if path and len(path) > 1:
+            self.path_points = path
+            self.show_path = True
+        else:
             self.show_path = False
             self.path_points = []
     
