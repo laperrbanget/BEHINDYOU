@@ -10,6 +10,7 @@ from ghost import Ghost
 from search import bfs_path
 from sprite_utils import load_sprite
 from level_manager import LevelManager
+from sprite_utils import load_sprite, load_wall_texture
 import os
 
 # ========== CLASS MENU ==========
@@ -151,20 +152,23 @@ class Game:
     def load_assets(self):
         """Load semua gambar (dengan fallback)"""
         # Wall texture
-        self.wall_texture = load_sprite("wall.png", DARK_GRAY, "rect")
+        self.wall_texture = load_wall_texture()
         
         # Heart assets
         self.heart_img = load_sprite("heart.png", RED, "rect")
         self.heart_empty_img = load_sprite("heart_empty.png", GRAY, "rect")
         
-        # Jumpscare
+        # 🔥 JUMPSCARE: ukuran 70% layar biar besar!
         self.jumpscare_img = load_sprite("ghost_scare.png", RED, "circle")
-        self.jumpscare_img = pygame.transform.scale(self.jumpscare_img, (SCREEN_WIDTH//2, SCREEN_HEIGHT//2))
+        if self.jumpscare_img:
+            target_width = int(SCREEN_WIDTH * 0.7)   # 70% dari lebar layar
+            target_height = int(SCREEN_HEIGHT * 0.7) # 70% dari tinggi layar
+            self.jumpscare_img = pygame.transform.smoothscale(self.jumpscare_img, (target_width, target_height))
         
         # Door sprite
         self.door_sprite = load_sprite("door.png", GREEN, "rect", "🚪")
         
-        # Background images per level (opsional, fallback ke warna)
+        # Background images per level
         self.bg_images = {}
         for i in range(1, 6):
             try:
@@ -350,16 +354,14 @@ class Game:
         self.jumpscare_timer = 0
     
     def draw_background(self):
-        """Gambar background (gambar atau warna fallback)"""
-        # Coba pake gambar background
+        
         if self.current_level in self.bg_images and self.bg_images[self.current_level] is not None:
             self.screen.blit(self.bg_images[self.current_level], (0, 0))
         else:
-            # Fallback ke warna
-            self.screen.fill(self.bg_color)
+            self.screen.fill(DARK_GRAY_BG)
     
     def draw_grid(self):
-        """Gambar grid dengan WALL TEXTURE PNG"""
+        """Gambar grid dengan WALL TEXTURE PNG dan jalan lebih gelap"""
         for row in range(GRID_HEIGHT):
             for col in range(GRID_WIDTH):
                 x = col * CELL_SIZE
@@ -369,8 +371,8 @@ class Game:
                     # DINDING: pake texture PNG
                     self.screen.blit(self.wall_texture, (x, y))
                 else:
-                    # JALAN: warna gelap dengan garis grid
-                    color = (45, 45, 65) if (row + col) % 2 == 0 else (55, 55, 75)
+                    # 🔥 JALAN: lebih gelap (23, 23, 35) dan (33, 33, 45)
+                    color = (23, 23, 35) if (row + col) % 2 == 0 else (33, 33, 45)
                     pygame.draw.rect(self.screen, color, (x, y, CELL_SIZE, CELL_SIZE))
                     pygame.draw.rect(self.screen, LIGHT_GRAY, (x, y, CELL_SIZE, CELL_SIZE), 1)
     
@@ -411,42 +413,36 @@ class Game:
             # Jangan matikan game, cukup skip gambar
     
     def draw_entities(self):
-        """Gambar player, hantu, dan pintu pake SPRITE"""
+        """Gambar player (multi-direction), hantu, dan pintu"""
         # Pintu
         exit_x = self.exit_pos[1] * CELL_SIZE
         exit_y = self.exit_pos[0] * CELL_SIZE
         
-        # Glow pintu
         glow_surf = pygame.Surface((CELL_SIZE+10, CELL_SIZE+10), pygame.SRCALPHA)
         pygame.draw.circle(glow_surf, (0, 255, 0, 50), (CELL_SIZE//2+5, CELL_SIZE//2+5), CELL_SIZE//2)
         self.screen.blit(glow_surf, (exit_x-5, exit_y-5))
-        
-        # Sprite pintu
         self.screen.blit(self.door_sprite, (exit_x + 5, exit_y + 5))
         
-        # Player
+        # PLAYER (pake sprite multi-direction)
         px = self.player.y * CELL_SIZE
         py = self.player.x * CELL_SIZE
         
-        # Glow player
         glow = pygame.Surface((CELL_SIZE+10, CELL_SIZE+10), pygame.SRCALPHA)
         pygame.draw.circle(glow, (80, 150, 255, 80), (CELL_SIZE//2+5, CELL_SIZE//2+5), CELL_SIZE//2)
         self.screen.blit(glow, (px-5, py-5))
         
-        # Sprite player
+        # Gambar sprite player sesuai arah
         self.screen.blit(self.player.get_sprite(), (px + 5, py + 5))
         
-        # GHOSTS (loop untuk semua hantu)
+        # GHOSTS
         for ghost in self.ghosts:
             gx = ghost.y * CELL_SIZE
             gy = ghost.x * CELL_SIZE
             
-            # Glow hantu
             glow = pygame.Surface((CELL_SIZE+10, CELL_SIZE+10), pygame.SRCALPHA)
             pygame.draw.circle(glow, (255, 80, 80, 80), (CELL_SIZE//2+5, CELL_SIZE//2+5), CELL_SIZE//2)
             self.screen.blit(glow, (gx-5, gy-5))
             
-            # Sprite hantu
             self.screen.blit(ghost.get_sprite(), (gx + 5, gy + 5))
     
     def draw_ui(self):
@@ -520,13 +516,13 @@ class Game:
             self.flash_alpha -= 15
     
     def draw_jumpscare(self):
-        """Gambar jumpscare (hantu besar)"""
+        """Gambar jumpscare (hantu besar) - FULL IMAGE, tanpa teks"""
         if self.jumpscare_active and self.jumpscare_timer > 0:
-            # Gambar hantu besar di tengah
-            img_rect = self.jumpscare_img.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 50))
-            self.screen.blit(self.jumpscare_img, img_rect)
+            if self.jumpscare_img:
+                # Gambar di tengah layar
+                img_rect = self.jumpscare_img.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2))
+                self.screen.blit(self.jumpscare_img, img_rect)
             
-            # Kurangi timer
             self.jumpscare_timer -= 1
             if self.jumpscare_timer <= 0:
                 self.jumpscare_active = False
@@ -560,9 +556,9 @@ class Game:
             self.handle_win()  # ← PANGGIL FUNGSI INI
     
     def trigger_jumpscare(self):
-        """Trigger jumpscare (game over)"""
+        """Trigger jumpscare (game over) - durasi 6 detik"""
         self.jumpscare_active = True
-        self.jumpscare_timer = 60  # 1 detik (60 frame)
+        self.jumpscare_timer = 360  # 🔥 6 detik (60 FPS × 6 = 360 frame)
         self.game_over = True
         if hasattr(self, 'scare_sound') and self.scare_sound:
             self.scare_sound.play()

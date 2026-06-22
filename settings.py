@@ -29,6 +29,8 @@ GRAY = (80, 80, 100)
 DARK_GRAY = (30, 30, 45)
 LIGHT_GRAY = (150, 150, 180)
 GLOW = (100, 100, 200)
+DARK_GRAY_BG = (18, 18, 28)  
+DARK_GRAY = (30, 30, 45)     
 
 # ========== PATH ASSET ==========
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
