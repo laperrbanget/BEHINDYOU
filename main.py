@@ -300,6 +300,7 @@ class Game:
                     pygame.draw.rect(self.screen, LIGHT_GRAY, (x, y, CELL_SIZE, CELL_SIZE), 1)
     
     def draw_path(self):
+        """Gambar garis jalur terpendek (TANPA efek samping)"""
         if not self.show_path:
             return
         if not self.path_points or len(self.path_points) < 2:
@@ -519,7 +520,7 @@ class Game:
             if hasattr(self, 'teleport_sound') and self.teleport_sound:
                 self.teleport_sound.play()
     
-    def show_path(self):
+    def calculate_path(self):
         """Tampilkan jalur terpendek"""
         start = self.player.get_position()
         goal = self.exit_pos
@@ -626,7 +627,7 @@ class Game:
                             self.player.move(0, 1, self.grid)
                             self.show_path = False
                         elif event.key == pygame.K_SPACE:
-                            self.show_path()
+                            self.calculate_path()
                     
                     if event.key == pygame.K_r:
                         if self.win:
