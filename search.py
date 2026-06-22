@@ -1,10 +1,27 @@
-# search.py - BFS buat auto-solve player
+# search.py - Algoritma BFS untuk auto-solve (VERSI AMAN)
 
 from collections import deque
 
 def bfs_path(grid, start, goal):
+    """Cari jalur terpendek dari start ke goal pake BFS"""
+    # Cek validasi input
+    if not grid or not start or not goal:
+        return []
+    
     rows = len(grid)
     cols = len(grid[0])
+    
+    # Cek apakah start dan goal di dalam grid
+    if not (0 <= start[0] < rows and 0 <= start[1] < cols):
+        return []
+    if not (0 <= goal[0] < rows and 0 <= goal[1] < cols):
+        return []
+    
+    # Cek apakah start dan goal bukan dinding
+    if grid[start[0]][start[1]] == 1:
+        return []
+    if grid[goal[0]][goal[1]] == 1:
+        return []
     
     queue = deque([(start, [start])])
     visited = set([start])
@@ -22,4 +39,4 @@ def bfs_path(grid, start, goal):
                     visited.add((nx, ny))
                     queue.append(((nx, ny), path + [(nx, ny)]))
     
-    return []
+    return []  # Gak ada jalur

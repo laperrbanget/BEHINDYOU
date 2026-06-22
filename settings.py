@@ -1,4 +1,4 @@
-# settings.py - Konfigurasi game
+# settings.py - Konfigurasi game (UKURAN AMAN UNTUK 14 INCH)
 
 import os
 
@@ -6,17 +6,17 @@ import os
 GRID_WIDTH = 15
 GRID_HEIGHT = 15
 
-# CELL_SIZE 50 biar gambar keliatan jelas (Rekomendasi!)
-CELL_SIZE = 50
+# CELL_SIZE 35 biar muat di layar 14" (525×645)
+CELL_SIZE = 35
 
 # Ukuran layar (otomatis)
-SCREEN_WIDTH = GRID_WIDTH * CELL_SIZE   # 750px
-SCREEN_HEIGHT = GRID_HEIGHT * CELL_SIZE + 150  # 750 + 150 = 900px
+SCREEN_WIDTH = GRID_WIDTH * CELL_SIZE   # 525px
+SCREEN_HEIGHT = GRID_HEIGHT * CELL_SIZE + 120  # 645px
 
 # ========== FPS ==========
 FPS = 60
 
-# ========== WARNA (Fallback kalau gambar gak ada) ==========
+# ========== WARNA (Fallback) ==========
 BLACK = (10, 10, 20)
 WHITE = (245, 245, 255)
 RED = (255, 80, 80)
