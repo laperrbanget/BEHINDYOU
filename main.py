@@ -87,15 +87,20 @@ class Game:
     def load_sounds(self):
         """Load sound effects"""
         try:
+            print("Loading sounds...")
             self.teleport_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "teleport.mp3"))
+            print("teleport OK")
             self.hit_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "hit.mp3"))
-            self.scare_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "scare.mp3"))
-            self.play_level_music()
+            print("scare OK")
             self.scream_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "orang_ditusuk.mp3"))
+            print("scream OK")
             self.stab_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "knife_stab.mp3"))
+            print("stab OK")
+            self.play_level_music()
+            print("music OK")
 
-        except:
-            print("Sound files not found — playing without sound")
+        except Exception as e:
+            print("ERROR:", e)
             self.teleport_sound = None
             self.hit_sound = None
             self.scare_sound = None
@@ -108,11 +113,14 @@ class Game:
             music_file = "bg_music.mp3"
 
         try:
+            print("LEVEL:", self.current_level)
+            print("MUSIC:", music_file)
+
             pygame.mixer.music.load(
                 os.path.join(SOUNDS_DIR, music_file)
             )
 
-            pygame.mixer.music.set_volume(0.3)
+            pygame.mixer.music.set_volume(1.0)
             pygame.mixer.music.play(-1)
 
         except Exception as e:
@@ -469,7 +477,7 @@ class Game:
         pygame.mixer.music.fadeout(500)
         if hasattr(self, 'stab_sound') and self.stab_sound:
             self.stab_sound.play()
-        pygame.time.delay(300)
+        pygame.time.delay(1000)
         self.jumpscare_active = True
         # durasi jumpscare 6 detik
         self.jumpscare_timer = 360
