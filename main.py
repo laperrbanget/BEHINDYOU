@@ -83,31 +83,50 @@ class Game:
                 self.bg_images[i] = None
     
     def load_sounds(self):
-        """Load sound effects"""
-        try:
-            self.teleport_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "teleport.mp3"))
-            self.teleport_sound.set_volume(0.7)
-            
-            self.hit_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "hit.mp3"))
-            self.hit_sound.set_volume(0.8)
-            
-            self.scream_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "orang_ditusuk.mp3"))
-            self.scream_sound.set_volume(1.0)
-            
-            self.stab_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "knife_stab.mp3"))
-            self.stab_sound.set_volume(1.0)
-            
-            self.behindyou_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "behindyou_effect.mp3"))
-            self.behindyou_sound.set_volume(0.9)
-            
-            self.play_level_music()
 
+        try:
+            self.teleport_sound = pygame.mixer.Sound(
+                os.path.join(SOUNDS_DIR, "teleport.mp3")
+            )
+            print("teleport OK")
         except Exception as e:
-            self.teleport_sound = None
-            self.hit_sound = None
-            self.scream_sound = None
-            self.stab_sound = None
+            print("teleport ERROR:", e)
+
+        try:
+            self.hit_sound = pygame.mixer.Sound(
+                os.path.join(SOUNDS_DIR, "hit.mp3")
+            )
+            print("hit OK")
+        except Exception as e:
+            print("hit ERROR:", e)
+
+        try:
+            self.scream_sound = pygame.mixer.Sound(
+                os.path.join(SOUNDS_DIR, "orang_ditusuk.mp3")
+            )
+            print("scream OK")
+        except Exception as e:
+            print("scream ERROR:", e)
+
+        try:
+            self.stab_sound = pygame.mixer.Sound(
+                os.path.join(SOUNDS_DIR, "knife_stab.mp3")
+            )
+            print("stab OK")
+        except Exception as e:
+            print("stab ERROR:", e)
+            self.stab_sound = None  # Set ke None kalau error
+
+        try:
+            self.behindyou_sound = pygame.mixer.Sound(
+                os.path.join(SOUNDS_DIR, "behindyou_effect.mp3")
+            )
+            print("behindyou OK")
+        except Exception as e:
+            print("behindyou ERROR:", e)
             self.behindyou_sound = None
+
+        self.play_level_music()
     
     def play_level_music(self):
 
@@ -483,14 +502,21 @@ class Game:
     
     def trigger_jumpscare(self):
         """Trigger jumpscare (game over)"""
+        # print("STAB =", self.stab_sound)
+
+        # print("BEHIND =", self.behindyou_sound)
+
+        # print("SCREAM =", self.scream_sound)
         pygame.mixer.music.fadeout(500)
         
         if hasattr(self, 'stab_sound') and self.stab_sound:
+            print("PLAY STAB")
             self.stab_sound.play()
-        
-        pygame.time.delay(1000)
-        
+
+        pygame.time.delay(300)
+
         if hasattr(self, 'behindyou_sound') and self.behindyou_sound:
+            print("PLAY BEHIND")
             self.behindyou_sound.play()
         
         self.jumpscare_active = True
@@ -498,6 +524,7 @@ class Game:
         self.game_over = True
         
         if hasattr(self, 'scream_sound') and self.scream_sound:
+            print("PLAY SCREAM")
             self.scream_sound.play()
     
     def teleport_ghosts(self):
