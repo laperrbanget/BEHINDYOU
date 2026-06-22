@@ -177,17 +177,33 @@ class Game:
     def load_sounds(self):
         """Load sound effects"""
         try:
-            self.teleport_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "teleport.wav"))
-            self.hit_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "hit.wav"))
-            self.scare_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "scare.wav"))
-            pygame.mixer.music.load(os.path.join(SOUNDS_DIR, "bg_music.mp3"))
-            pygame.mixer.music.set_volume(0.3)
-            pygame.mixer.music.play(-1)
+            self.teleport_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "teleport.mp3"))
+            self.hit_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "hit.mp3"))
+            self.scare_sound = pygame.mixer.Sound(os.path.join(SOUNDS_DIR, "scare.mp3"))
+            self.play_level_music()
         except:
             print("Sound files not found — playing without sound")
             self.teleport_sound = None
             self.hit_sound = None
             self.scare_sound = None
+    
+    def play_level_music(self):
+
+        music_file = f"bg_music_{self.current_level}.mp3"
+
+        if self.current_level == 1:
+            music_file = "bg_music.mp3"
+
+        try:
+            pygame.mixer.music.load(
+                os.path.join(SOUNDS_DIR, music_file)
+            )
+
+            pygame.mixer.music.set_volume(0.3)
+            pygame.mixer.music.play(-1)
+
+        except Exception as e:
+            print(e)
 
     # ========== LEVEL & MENU METHODS ==========
     
@@ -277,6 +293,7 @@ class Game:
         self.ghost_teleport_interval = config['ghost_teleport_interval']
         self.door_teleport_interval = config['door_teleport_interval']
         self.bg_color = config['background_color']
+        self.play_level_music()
         
         # Cari posisi start yang reachable ke exit
         empty_cells = []
